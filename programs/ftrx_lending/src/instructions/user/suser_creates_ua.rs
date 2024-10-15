@@ -21,7 +21,10 @@ pub fn handle(
     user_state.user_volatile_share_deposited=0;
     user_state.user_stable_share_borrowed=0;
     user_state.user_volatile_share_borrowed=0;
-
+    user_state.liquid_stable_minted=0;
+    user_state.liquid_volatile_minted=0;
+    user_state.stable_asset_share_locked=0;
+    user_state.volatile_asset_share_locked=0;
 
     
     user_state.ua_bump=bump;

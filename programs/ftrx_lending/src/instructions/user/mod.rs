@@ -15,3 +15,10 @@ pub use suser_redeems::*;
 
 pub mod suser_liquidates;
 pub use suser_liquidates::*;
+
+pub mod suser_mints_liquid;
+pub use suser_mints_liquid::*;
+
+pub mod suser_burns_liquid;
+pub use suser_burns_liquid::*;
+

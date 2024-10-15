@@ -57,6 +57,40 @@ describe("ftrx_lending", () => {
     );
 
     return transaction
+
+    
+    
+  }
+
+
+  function liquid_utas_account_creation_instruction(owner,associatedToken1,mint1,associatedToken2,mint2){
+      
+
+    const transaction = new Transaction().add(
+      createAssociatedTokenAccountInstruction(
+          owner.publicKey,
+          associatedToken1,
+          owner.publicKey,
+          mint1,
+          TOKEN_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+      createSyncNativeInstruction(associatedToken1, TOKEN_PROGRAM_ID),
+      createAssociatedTokenAccountInstruction(
+        owner.publicKey,
+        associatedToken2,
+        owner.publicKey,
+        mint2,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+    ),
+    createSyncNativeInstruction(associatedToken2, TOKEN_PROGRAM_ID),
+    
+    );
+
+    return transaction
+
+    
     
   }
 
@@ -115,6 +149,7 @@ describe("ftrx_lending", () => {
   );
 
   let str_disc_vault="vault"
+  let str_disc_liquid="liquid"
 
 
   let [volatileVaultKey, volatileVaultBump] =
@@ -137,6 +172,29 @@ describe("ftrx_lending", () => {
     program.programId
   );
 
+  let [liquidVolatileKey, liquidVolatileBump] =
+  web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from(str_disc_liquid),
+      wsolMint.toBuffer(),
+      simplePoolKey.toBuffer(),
+    ],
+    program.programId
+  );
+
+  let [liquidStableKey, liquidStableBump] =
+  web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from(str_disc_liquid),
+      usdcMint.toBuffer(),
+      simplePoolKey.toBuffer(),
+    ],
+    program.programId
+  );
+
+
+  
+
   const pythFeed = new PublicKey("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
 
   
@@ -145,6 +203,8 @@ describe("ftrx_lending", () => {
     simplePool:simplePoolKey,
     poolAdmin:superUser.publicKey,
     userAdmin:superUser.publicKey,
+    liquidVolatileMint:liquidVolatileKey,
+    liquidStableMint:liquidStableKey,
     userToLiquidate:secondSimpleUserAccountKey,
     userState:simpleUserAccountKey,
     volatileShareMint:volatileShareMintKey,
@@ -165,6 +225,8 @@ describe("ftrx_lending", () => {
     userSigner:testUser.publicKey,
     userAuthority:testUser.publicKey,
     signer:testUser.publicKey,
+    liquidVolatileMint:liquidVolatileKey,
+    liquidStableMint:liquidStableKey,
     userVolatileVault:testUser.publicKey,
     userState:secondSimpleUserAccountKey,
     userToLiquidate:simpleUserAccountKey,
@@ -180,8 +242,24 @@ describe("ftrx_lending", () => {
     rent: SYSVAR_RENT_PUBKEY,
   };
 
-  let borrower_borrows_volatile=true
-  it("Is initialized!", async () => {
+  let borrower_borrows_volatile=false
+  let perform_liquidation=true
+  it("Create lending pool", async () => {
+    // Add your test here.
+    const target_utilization_in = new BN(800_000_000_000);//=101
+    const protocol_fee_in       = new BN(3_000_000_000);//=30%
+    const insurance_fund_fee_in = new BN(3_000_000_000);//=1%
+    const new_borrow_ltv        = new BN(800_000);//=1%
+    const liquidation_ltv       = new BN(880_000);//=1%
+    const decimal_wsol=new BN(9);
+    const decimal_usdc=new BN(6);
+
+      
+    const tx = await program.methods.adminCreatesSp(simplePoolKeyBump,target_utilization_in,protocol_fee_in,insurance_fund_fee_in,new_borrow_ltv,liquidation_ltv,decimal_wsol,decimal_usdc).accounts(accounts).signers([superUser]).rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("Creating token accounts for liquids", async () => {
     const testUserCollateralAta = new PublicKey("51um5dCXFCtF55oju2rFoWezQkaPG2ZFRmeffbkdRSU2")
 
     const userCollateralAta = new PublicKey("6fM785rhRecw5X7tSshk7sQmUYphqBGkCuA3HkoEJLKt")
@@ -199,24 +277,67 @@ describe("ftrx_lending", () => {
       testUser.publicKey,
       LAMPORTS_PER_SOL * 10000
     );
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
-  });
 
-  it("Create lending pool", async () => {
-    // Add your test here.
-    const target_utilization_in = new BN(800_000_000_000);//=101
-    const protocol_fee_in       = new BN(3_000_000_000);//=30%
-    const insurance_fund_fee_in = new BN(3_000_000_000);//=1%
-    const new_borrow_ltv        = new BN(800_000);//=1%
-    const liquidation_ltv       = new BN(880_000);//=1%
-    const decimal_wsol=new BN(9);
-    const decimal_usdc=new BN(6);
+    const { lastValidBlockHeight, blockhash } =
+    await connection.getLatestBlockhash();
 
-      
-    const tx = await program.methods.adminCreatesSp(simplePoolKeyBump,target_utilization_in,protocol_fee_in,insurance_fund_fee_in,new_borrow_ltv,liquidation_ltv,decimal_wsol,decimal_usdc).accounts(accounts).signers([superUser]).rpc();
-    console.log("Your transaction signature", tx);
+    let output_tx=await connection.confirmTransaction(
+      {
+        blockhash: blockhash,
+        lastValidBlockHeight: lastValidBlockHeight,
+        signature: txHash2,
+      },
+      "confirmed",
+    );
+
+    if(false){
+    const liquid_volatile_uta = getAssociatedTokenAddressSync(
+      liquidVolatileKey,
+      testUser.publicKey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  console.log(liquidStableKey)
+  console.log(NATIVE_MINT)
+  const liquid_stable_uta = getAssociatedTokenAddressSync(
+    liquidStableKey,
+    testUser.publicKey,
+    false,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+);
+
+
+    let tx_creating_uta=liquid_utas_account_creation_instruction(testUser,liquid_stable_uta,liquidStableKey,liquid_volatile_uta,liquidVolatileKey)
+
+
+
+    // Add your test here.
+
+    let tx1=  await connection.sendTransaction(tx_creating_uta, [testUser]);
+    
+    console.log("Your transaction signature", tx1);}
+    else{
+      const liquid_stable_uta = await getOrCreateAssociatedTokenAccount(
+        connection,
+        superUser,
+        accounts.liquidStableMint,
+        superUser.publicKey,
+        true
+      );
+
+      const liquid_volatile_uta = await getOrCreateAssociatedTokenAccount(
+        connection,
+        superUser,
+        accounts.liquidVolatileMint,
+        superUser.publicKey,
+        true
+      );
+      accounts.userLiquidStableUta=liquid_stable_uta.address
+      accounts.userLiquidVolatileUta=liquid_volatile_uta.address
+     
+    }
   });
 
 
@@ -264,6 +385,47 @@ describe("ftrx_lending", () => {
     console.log(simplePool)
 
   });
+
+
+  it("Mints liquid assets", async () => {
+    // Add your test here.
+    const asset_index = new BN(0);//=101
+    const asset_amount_usdc = new BN(500_000);//=30%
+    const asset_amount_sol = new BN(100_000_000);//=30%
+    
+    let volatile_before = await getAccount(connection, accounts.volatileVault);
+    let stable_before = await getAccount(connection, accounts.stableVault);
+    const tx1 = await program.methods.suserMintsLiquid(0,asset_amount_usdc).accounts(accounts).signers([superUser]).rpc();
+    const tx2 = await program.methods.suserMintsLiquid(1,asset_amount_sol).accounts(accounts).signers([superUser]).rpc();
+    console.log("Your transaction signature", tx1);
+    console.log("Your transaction signature", tx2);
+    let volatile_after = await getAccount(connection, accounts.volatileVault);
+    let stable_after = await getAccount(connection, accounts.stableVault);
+    let tokenAccountTreas_before = await getAccount(connection, accounts.volatileVault);
+    console.log("Volatile before",Number(volatile_before.amount))
+    console.log("Volatile after",Number(volatile_after.amount))
+    console.log("Stable before",Number(stable_before.amount))
+    console.log("Stable after",Number(stable_after.amount))
+
+    const txDetails = await program.provider.connection.getTransaction(tx2, {
+      maxSupportedTransactionVersion: 0,
+      commitment: "confirmed",
+    });
+    console.log("LIQUID MINT DETAILS",txDetails.meta.logMessages)
+
+    const txDetails2 = await program.provider.connection.getTransaction(tx1, {
+      maxSupportedTransactionVersion: 0,
+      commitment: "confirmed",
+    });
+    console.log("LIQUID MINT DETAILS",txDetails2.meta.logMessages)
+
+    const simplePool = await program.account.simplePool.fetch(
+      accounts.simplePool
+    );
+    console.log(simplePool)
+
+  });
+
 
   it("Create borrower user account", async () => {
     // Add your test here.
@@ -421,6 +583,7 @@ describe("ftrx_lending", () => {
       const asset_index = new BN(1);//=101
       const asset_amount = new BN(20_000);//=30%
       accounts.userToLiquidateState=secondSimpleUserAccountKey
+      if (perform_liquidation){
       const tx1 = await program.methods.suserLiquidates(1,asset_amount).accounts(accounts).signers([superUser]).rpc();
       console.log("Your transaction signature", tx1);
       console.log("Your transaction signature", tx1);
@@ -446,7 +609,7 @@ describe("ftrx_lending", () => {
         commitment: "confirmed",
       });
       console.log("LIQUIDATION DETAILS",txDetails.meta.logMessages)
-
+}
       
 
     }else{
@@ -454,6 +617,7 @@ describe("ftrx_lending", () => {
       const asset_index = new BN(1);//=101
       const asset_amount = new BN(1_000_000);//=30%
       accounts.userToLiquidateState=secondSimpleUserAccountKey
+      if (perform_liquidation){
       const tx1 = await program.methods.suserLiquidates(0,asset_amount).accounts(accounts).signers([superUser]).rpc();
       console.log("Your transaction signature", tx1);
 
@@ -479,7 +643,7 @@ describe("ftrx_lending", () => {
     });
     console.log("LIQUIDATION DETAILS",txDetails.meta.logMessages)
 
-    
+    }
   
     }
       });

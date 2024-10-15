@@ -19,13 +19,15 @@ pub fn handle(
   let mut user_account = &mut ctx.accounts.user_state;
   let SHARE_VALUE_MULTIPLIER:u64=1_000_000_000_000;
   if asset_index==0{
-    if (asset_amount<10_000) {return err!(ErrorCode::AmountTooLow); }
-    if (asset_amount>1_000_000_000) {return err!(ErrorCode::AmountTooBig); }
+    if (share_amount<10_000) {return err!(ErrorCode::AmountTooLow); }
+    if (share_amount>1_000_000_000) {return err!(ErrorCode::AmountTooBig); }
     
 
     if (user_account.user_stable_share_borrowed==0) {return err!(ErrorCode::NoBorrowWantsToRedeem); }
 
     let amount_stable_share_returned=share_amount;
+    msg!["Redemption : amount stable share attempted returned {}/1000000 ",amount_stable_share_returned];
+    
     let asset_amount_to_transfer=share_amount.checked_mul(simple_pool.stable_share_liabi_value).unwrap().checked_div(SHARE_VALUE_MULTIPLIER).unwrap();
 
     let cpi_accounts = Transfer {
@@ -41,14 +43,15 @@ pub fn handle(
 
     simple_pool.stable_share_borrowed=simple_pool.stable_share_borrowed.checked_sub(amount_stable_share_returned).unwrap();
     //simple_pool.volatile_deposited=simple_pool.volatile_deposited.checked_add(asset_amount).unwrap();
+    msg!["Redemption : borrowed stable share before {}/1000000 {}/1000000",user_account.user_stable_share_borrowed,amount_stable_share_returned];
     user_account.user_stable_share_borrowed=user_account.user_stable_share_borrowed.checked_sub(amount_stable_share_returned).unwrap();
 
 
     
 
   }else{
-    if (asset_amount<10_000) {return err!(ErrorCode::AmountTooLow); }
-    if (asset_amount>1_000_000_000) {return err!(ErrorCode::AmountTooBig); }
+    if (share_amount<10_000) {return err!(ErrorCode::AmountTooLow); }
+    if (share_amount>1_000_000_000) {return err!(ErrorCode::AmountTooBig); }
     
     if (user_account.user_volatile_share_deposited>0) {return err!(ErrorCode::NoBorrowIfDeposited); }
 

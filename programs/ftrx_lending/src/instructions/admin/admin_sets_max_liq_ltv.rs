@@ -121,25 +121,6 @@ pub struct AdminCreatesSp<'info> {
     pub volatile_vault: Box<Account<'info, TokenAccount>>,
 
 
-    #[account(init,
-      mint::decimals = 6,
-      mint::authority = simple_pool,
-      seeds = [b"liquid",stable_mint.key().as_ref(),simple_pool.key().as_ref()],
-      bump,
-      payer = pool_admin
-    )]
-    pub liquid_stable_mint: Box<Account<'info, Mint>>,
-
-
-    #[account(init,
-      mint::decimals = 9,
-      mint::authority = simple_pool,
-      seeds = [b"liquid",volatile_mint.key().as_ref(),simple_pool.key().as_ref()],
-      bump,
-      payer = pool_admin
-    )]
-    pub liquid_volatile_mint: Box<Account<'info, Mint>>,
-
 
     pub stable_mint: Box<Account<'info, Mint>>,
     pub volatile_mint: Box<Account<'info, Mint>>,

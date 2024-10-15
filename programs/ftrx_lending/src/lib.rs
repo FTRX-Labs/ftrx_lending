@@ -69,6 +69,20 @@ pub mod ftrx_lending {
     Ok(())
     }
 
+    pub fn suser_mints_liquid(ctx: Context<SUserMintsLiquid>,
+        asset_index: u8,
+        asset_amount:u64,)-> Result<()> {
+            suser_mints_liquid::handle(ctx,asset_index,asset_amount);
+    Ok(())
+    }
+
+    pub fn suser_burns_liquid(ctx: Context<SUserBurnsLiquid>,
+        asset_index: u8,
+        asset_amount:u64,)-> Result<()> {
+            suser_burns_liquid::handle(ctx,asset_index,asset_amount);
+    Ok(())
+    }
+
     pub fn suser_liquidates(ctx: Context<SUserLiquidates>,
         asset_index: u8,
         asset_amount:u64,)-> Result<()> {

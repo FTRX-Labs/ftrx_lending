@@ -36,7 +36,9 @@ pub fn handle(
    
     if asset_index==0{
       let mut max_maintainance_amount_stable=user_to_liquidate.get_max_maintainance_borrowable_stable(&simple_pool,price.price,multiplier).unwrap();
-      max_maintainance_amount_stable=max_maintainance_amount_stable.checked_mul(1000).unwrap().checked_div(1200).unwrap();     
+      
+      //This line is for testing : artificially reducing the max amount to trigger liquidation
+      max_maintainance_amount_stable=max_maintainance_amount_stable.checked_mul(1000).unwrap().checked_div(1500).unwrap();     
       
       msg!["LOG USDC max share to borrow with volatile vs currently_borrowed {}/1000000 {}/1000000 ",max_maintainance_amount_stable,user_to_liquidate.user_stable_share_borrowed];
       if (user_to_liquidate.user_stable_share_borrowed>max_maintainance_amount_stable){

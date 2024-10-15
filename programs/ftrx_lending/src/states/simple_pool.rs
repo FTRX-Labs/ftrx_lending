@@ -56,6 +56,7 @@ pub struct SimplePool{
 
     pub new_borrow_max_ltv:u64,
     pub liquidation_ltv:u64,
+    pub liquidation_max_ltv:u64,
 
     pub last_update:i64,
     pub last_price:i64,
